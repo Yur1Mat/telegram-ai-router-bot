@@ -24,7 +24,7 @@
 Нужны Python 3.11+ и Git.
 
 ```powershell
-git clone <URL-ЭТОГО-РЕПОЗИТОРИЯ>
+git clone https://github.com/Yur1Mat/telegram-ai-router-bot.git
 cd telegram-ai-router-bot
 Copy-Item .env.example .env
 python -m venv .venv
@@ -63,7 +63,7 @@ docker compose logs -f
 /providers
 ```
 
-После `/providers` нажмите нужного провайдера. Модель меняется командой, например `/model gpt-5-mini`.
+После `/providers` нажмите нужного провайдера. Модель меняется командой, например `/model gpt-5.6-luna`.
 
 Для другого OpenAI-совместимого API:
 
@@ -95,4 +95,3 @@ python -m unittest discover -s tests -v
 ## Лицензия
 
 MIT
-

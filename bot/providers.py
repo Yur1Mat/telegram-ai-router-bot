@@ -15,9 +15,9 @@ class ProviderPreset:
 
 
 PRESETS: dict[str, ProviderPreset] = {
-    "openai": ProviderPreset("OpenAI", "https://api.openai.com/v1", "gpt-5-mini", "responses"),
-    "anthropic": ProviderPreset("Claude (Anthropic)", "https://api.anthropic.com/v1", "claude-sonnet-4-20250514", "anthropic"),
-    "deepseek": ProviderPreset("DeepSeek", "https://api.deepseek.com", "deepseek-chat", "chat"),
+    "openai": ProviderPreset("OpenAI", "https://api.openai.com/v1", "gpt-5.6-luna", "responses"),
+    "anthropic": ProviderPreset("Claude (Anthropic)", "https://api.anthropic.com/v1", "claude-sonnet-5", "anthropic"),
+    "deepseek": ProviderPreset("DeepSeek", "https://api.deepseek.com", "deepseek-v4-flash", "chat"),
     "custom": ProviderPreset("Custom API", "", "", "chat"),
 }
 
@@ -88,4 +88,3 @@ async def _post(session: aiohttp.ClientSession, url: str, payload: dict[str, Any
 
 def _missing_text(_: dict[str, Any]) -> str:
     raise ProviderError("API returned no text")
-
