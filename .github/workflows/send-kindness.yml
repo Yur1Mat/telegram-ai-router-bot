@@ -1,0 +1,27 @@
+name: Send kind Telegram message
+
+on:
+  schedule:
+    - cron: "30 9 * * *"
+      timezone: "Europe/Moscow"
+    - cron: "30 19 * * *"
+      timezone: "Europe/Moscow"
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Send message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
+          DELIVERY_SLOT: ${{ github.event.schedule == '30 9 * * *' && 'morning' || 'evening' }}
+        run: python -m bot.send_once

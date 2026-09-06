@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from bot.app import next_scheduled_at
 from bot.config import Settings, _parse_times
 from bot.messages import MESSAGES
+from bot.send_once import message_for
 from bot.storage import Storage
 
 
@@ -21,6 +22,12 @@ class MessageTests(unittest.TestCase):
 
     def test_requested_example_is_present(self):
         self.assertTrue(any("манной каши без единого комочка" in text for text in MESSAGES))
+
+    def test_serverless_schedule_uses_a_different_message_for_each_slot(self):
+        morning = message_for(datetime(2026, 9, 6).date(), 0)
+        evening = message_for(datetime(2026, 9, 6).date(), 1)
+        tomorrow = message_for(datetime(2026, 9, 7).date(), 0)
+        self.assertEqual(len({morning, evening, tomorrow}), 3)
 
 
 class ScheduleTests(unittest.TestCase):
