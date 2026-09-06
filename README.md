@@ -1,96 +1,94 @@
-# Telegram AI Router Bot
+# Telegram-бот добрых пожеланий
 
-Приватный Telegram-бот, который позволяет из Telegram добавлять API-ключи и переключаться между OpenAI, Claude (Anthropic), DeepSeek и любым OpenAI-совместимым API.
+Бот дважды в день — в **09:30** и **19:30 по Москве** — присылает подписчикам доброе, уютное и немного смешное пожелание.
 
-## Возможности
+Пример: «Желаю тебе манной каши без единого комочка».
 
-- выбор провайдера через inline-кнопки (`/providers`);
-- отдельный зашифрованный API-ключ для каждого провайдера;
-- смена модели и системного промпта без перезапуска;
-- история последних 20 сообщений и команда очистки;
-- доступ только для разрешённых Telegram user ID;
-- запуск локально или через Docker Compose;
-- пользовательский HTTPS endpoint для OpenAI-совместимых сервисов.
+## Что умеет
 
-## 1. Создайте Telegram-бота
+- подписывает пользователя по команде `/start`;
+- останавливает рассылку по `/stop`;
+- показывает расписание по `/status`;
+- отправляет пробное пожелание по `/test`;
+- хранит подписки и историю отправок в SQLite;
+- не дублирует отправку после перезапуска;
+- содержит **2305 уникальных сообщений** — более чем на три года при двух сообщениях в день;
+- запускается локально или круглосуточно через Docker.
 
-1. Откройте [@BotFather](https://t.me/BotFather) в Telegram.
-2. Отправьте `/newbot`, задайте имя и username.
-3. Скопируйте выданный bot token.
-4. Узнайте свой числовой Telegram ID через [@userinfobot](https://t.me/userinfobot).
+## Быстрый запуск
 
-## 2. Настройте проект
+Понадобятся Python 3.11+ и токен Telegram-бота.
 
-Нужны Python 3.11+ и Git.
+### 1. Создайте бота
+
+1. Откройте [@BotFather](https://t.me/BotFather).
+2. Отправьте `/newbot` и следуйте подсказкам.
+3. Скопируйте токен вида `123456:ABC...`.
+
+### 2. Настройте проект
 
 ```powershell
-git clone https://github.com/Yur1Mat/telegram-ai-router-bot.git
-cd telegram-ai-router-bot
+git clone -b codex/daily-kindness-bot https://github.com/Yur1Mat/telegram-ai-router-bot.git kindness-bot
+cd kindness-bot
 Copy-Item .env.example .env
+```
+
+Откройте `.env` и замените значение `TELEGRAM_BOT_TOKEN` на токен от BotFather.
+
+По умолчанию подписаться может любой, кто найдёт бота. Чтобы сделать его приватным, заполните `ALLOWED_USER_IDS` числовыми Telegram ID через запятую:
+
+```env
+ALLOWED_USER_IDS=123456789,987654321
+```
+
+Свой ID можно узнать у [@userinfobot](https://t.me/userinfobot).
+
+### 3. Запустите
+
+Вариант с Python:
+
+```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
-Откройте `.env` и укажите:
-
-- `TELEGRAM_BOT_TOKEN` — токен от BotFather;
-- `ADMIN_USER_IDS` — ваш Telegram ID (несколько ID через запятую);
-- `ENCRYPTION_KEY` — результат последней команды.
-
-Не публикуйте `.env`: файл уже внесён в `.gitignore`.
-
-## 3. Запустите
-
-```powershell
 python -m bot
 ```
 
-Или через Docker:
+Вариант с Docker:
 
 ```powershell
 docker compose up -d --build
 docker compose logs -f
 ```
 
-## 4. Подключите AI в самом боте
+После запуска откройте своего бота в Telegram и нажмите **Start** или отправьте `/start`.
 
-```text
-/setkey openai sk-...
-/setkey anthropic sk-ant-...
-/setkey deepseek sk-...
-/providers
+## Работа 24/7
+
+Для постоянной рассылки процесс должен быть постоянно запущен. Самый простой вариант — установить Docker на VPS, скопировать туда проект и выполнить `docker compose up -d --build`. В `compose.yaml` уже включён автоматический перезапуск контейнера.
+
+База находится в `data/kindness.sqlite3`. Docker подключает эту папку как постоянный том, поэтому подписки и история не пропадут после обновления контейнера.
+
+## Изменение расписания
+
+В `.env` можно указать другое время и часовой пояс:
+
+```env
+SEND_TIMES=09:30,19:30
+TIMEZONE=Europe/Moscow
 ```
 
-После `/providers` нажмите нужного провайдера. Модель меняется командой, например `/model gpt-5.6-luna`.
-
-Для другого OpenAI-совместимого API:
-
-```text
-/providers              # выберите Custom API
-/setkey custom ВАШ_КЛЮЧ
-/endpoint https://example.com/v1
-/model model-name
-```
-
-Затем просто отправляйте обычные сообщения. `/clear` начинает новый диалог, `/status` показывает активные настройки.
-
-## Безопасность
-
-- Бот отвечает только ID из `ADMIN_USER_IDS`.
-- Ключи шифруются Fernet и сохраняются в `data/bot.sqlite3`.
-- Команда с ключом удаляется из чата, если Telegram разрешает удаление. Всё равно используйте только личный чат.
-- Потеря `ENCRYPTION_KEY` делает сохранённые API-ключи нечитаемыми.
-- При смене `ENCRYPTION_KEY` удалите локальную БД и добавьте ключи заново.
-
-OpenAI реализован через Responses API с `store: false`; Claude — через Messages API; DeepSeek и Custom — через Chat Completions-совместимый протокол.
+После изменения перезапустите бота.
 
 ## Проверка
 
 ```powershell
 python -m unittest discover -s tests -v
 ```
+
+## Безопасность
+
+Никогда не добавляйте `.env` в Git и не публикуйте токен. Файл уже указан в `.gitignore`. Если токен случайно попал в открытый доступ, сразу перевыпустите его через BotFather.
 
 ## Лицензия
 
