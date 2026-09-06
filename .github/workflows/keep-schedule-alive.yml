@@ -1,0 +1,25 @@
+name: Keep scheduled bot active
+
+on:
+  schedule:
+    - cron: "17 3 1 * *"
+      timezone: "Europe/Moscow"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Record repository activity
+        run: |
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/keepalive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive
+          git commit -m "chore: keep scheduled bot active"
+          git push
