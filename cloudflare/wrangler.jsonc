@@ -1,0 +1,13 @@
+{
+  "name": "telegram-kindness-bot",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-07",
+  "account_id": "6f0ae2e2d419ddd1d15b57911f0f82be",
+  "workers_dev": true,
+  "triggers": { "crons": ["* * * * *"] },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "kindness-subscribers",
+    "database_id": "cdb90dd9-813a-49c7-851c-ac19874e6c62"
+  }]
+}

@@ -1,26 +1,10 @@
-name: Send kind Telegram message
-
+name: Legacy Telegram sender (disabled)
 on:
-  schedule:
-    # UTC: Moscow is UTC+3. GitHub may delay scheduled runs.
-    - cron: "30 5 * * *"
-    - cron: "30 14 * * *"
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
-  send:
+  information:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Send message
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
-          DELIVERY_SLOT: ${{ github.event_name == 'schedule' && (github.event.schedule == '30 5 * * *' && 'morning' || 'evening') || '' }}
-        run: python -m bot.send_once
+      - run: echo "Delivery is managed by Cloudflare Workers. See cloudflare/README.md."

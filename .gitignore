@@ -4,4 +4,10 @@ __pycache__/
 *.py[cod]
 data/
 .pytest_cache/
-
+.test-deps/
+.github/subscribers.tmp
+.github/subscribers.enc
+.local-tools/
+.wrangler/
+.dev.vars
+node_modules/
