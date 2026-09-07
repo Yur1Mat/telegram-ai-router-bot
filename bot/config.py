@@ -14,7 +14,7 @@ def _parse_times(value: str) -> tuple[time, ...]:
             hour, minute = (int(part) for part in raw.strip().split(":"))
             result.append(time(hour=hour, minute=minute))
         except (TypeError, ValueError) as exc:
-            raise ValueError("SEND_TIMES must look like 09:30,19:30") from exc
+            raise ValueError("SEND_TIMES must look like 08:30,17:30") from exc
     if not result:
         raise ValueError("SEND_TIMES must contain at least one time")
     return tuple(sorted(set(result)))
@@ -54,7 +54,7 @@ class Settings:
         data_dir.mkdir(parents=True, exist_ok=True)
         return cls(
             telegram_token=token,
-            send_times=_parse_times(os.getenv("SEND_TIMES", "09:30,19:30")),
+            send_times=_parse_times(os.getenv("SEND_TIMES", "08:30,17:30")),
             timezone=timezone,
             data_dir=data_dir,
             log_level=os.getenv("LOG_LEVEL", "INFO"),

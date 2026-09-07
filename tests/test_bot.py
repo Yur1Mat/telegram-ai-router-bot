@@ -33,19 +33,19 @@ class MessageTests(unittest.TestCase):
 class ScheduleTests(unittest.TestCase):
     def setUp(self):
         self.zone = ZoneInfo("Europe/Moscow")
-        self.times = (time(9, 30), time(19, 30))
+        self.times = (time(8, 30), time(17, 30))
 
     def test_next_time_is_same_day(self):
         now = datetime(2026, 9, 6, 12, 0, tzinfo=self.zone)
-        self.assertEqual(next_scheduled_at(now, self.times).hour, 19)
+        self.assertEqual(next_scheduled_at(now, self.times).hour, 17)
 
     def test_next_time_rolls_to_tomorrow(self):
         now = datetime(2026, 9, 6, 20, 0, tzinfo=self.zone)
         result = next_scheduled_at(now, self.times)
-        self.assertEqual((result.day, result.hour, result.minute), (7, 9, 30))
+        self.assertEqual((result.day, result.hour, result.minute), (7, 8, 30))
 
     def test_time_parser(self):
-        self.assertEqual(_parse_times("19:30,09:30"), self.times)
+        self.assertEqual(_parse_times("17:30,08:30"), self.times)
 
 
 class StorageTests(unittest.TestCase):
@@ -80,7 +80,7 @@ class ConfigTests(unittest.TestCase):
         ):
             settings = Settings.from_env()
             self.assertEqual(settings.timezone.key, "Europe/Moscow")
-            self.assertEqual(settings.send_times, (time(9, 30), time(19, 30)))
+            self.assertEqual(settings.send_times, (time(8, 30), time(17, 30)))
 
 
 if __name__ == "__main__":

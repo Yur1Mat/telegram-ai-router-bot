@@ -3,8 +3,8 @@ name: Send kind Telegram message
 on:
   schedule:
     # UTC: Moscow is UTC+3. GitHub may delay scheduled runs.
-    - cron: "30 6 * * *"
-    - cron: "30 16 * * *"
+    - cron: "30 5 * * *"
+    - cron: "30 14 * * *"
   workflow_dispatch:
 
 jobs:
@@ -22,5 +22,5 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
-          DELIVERY_SLOT: ${{ github.event_name == 'schedule' && (github.event.schedule == '30 6 * * *' && 'morning' || 'evening') || '' }}
+          DELIVERY_SLOT: ${{ github.event_name == 'schedule' && (github.event.schedule == '30 5 * * *' && 'morning' || 'evening') || '' }}
         run: python -m bot.send_once
