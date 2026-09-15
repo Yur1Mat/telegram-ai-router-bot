@@ -23,7 +23,7 @@ test('ordinary text and media receive the exact reply without subscribing',async
     }
     assert.equal(sent.length,5);
     assert.ok(sent.every(x=>x.text===AUTO_REPLY));
-    assert.equal(AUTO_REPLY,'Ань, я тебе еще не говорил, но ты сегодня такааааая пиздатая!!!');
+    assert.equal(AUTO_REPLY,'черт побери, ты такая крутая!');
     await handleUpdate({update_id:124,message:{chat:{id:-1,type:'group'},text:'Привет'}},{});
     assert.equal(sent.length,5);
   } finally { globalThis.fetch=original; }
