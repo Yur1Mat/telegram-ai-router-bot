@@ -1,5 +1,5 @@
-import messages from './messages.json' with { type: 'json' };
-import { latestSlot, messageIndex } from './schedule.mjs';
+import { latestSlot } from './schedule.mjs';
+import { scheduledText, AUTO_REPLY } from './content.mjs';
 
 async function telegram(env, method, body) {
   try {
@@ -19,10 +19,14 @@ async function telegram(env, method, body) {
 export async function handleUpdate(update, env) {
   const message = update.message;
   if (!Number.isSafeInteger(update.update_id) || message?.chat?.type !== 'private'
-      || !Number.isSafeInteger(message.chat.id) || typeof message.text !== 'string') return;
+      || !Number.isSafeInteger(message.chat.id)) return;
   const chat = String(message.chat.id);
-  const command = message.text.trim().split(/\s+/)[0].split('@')[0].toLowerCase();
-  if (!['/start', '/stop', '/status', '/help'].includes(command)) return;
+  const command = (message.text || '').trim().split(/\s+/)[0].split('@')[0].toLowerCase();
+  if (!['/start', '/stop', '/status', '/help'].includes(command)) {
+    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: AUTO_REPLY });
+    if (!reply.ok && reply.code !== 403 && reply.code !== 400) throw new Error('Reply temporarily unavailable');
+    return;
+  }
   const now = Date.now();
   if (command === '/start' || command === '/stop') {
     const active = command === '/start' ? 1 : 0;
@@ -50,6 +54,7 @@ export async function deliver(env, now = Date.now()) {
   if (env.DELIVERY_ENABLED !== 'true') return;
   const slot = latestSlot(now);
   if (!slot) return;
+  const text = scheduledText(slot);
   const { results } = await env.DB.prepare(`SELECT s.chat_id FROM subscribers s
     LEFT JOIN deliveries d ON d.chat_id=s.chat_id AND d.slot=?
     WHERE s.active=1 AND s.since<=? AND (d.status IS NULL OR (d.status='pending' AND d.lease_until<=?))
@@ -66,7 +71,7 @@ export async function deliver(env, now = Date.now()) {
     const active = await env.DB.prepare('SELECT active FROM subscribers WHERE chat_id=?').bind(row.chat_id).first();
     if (!active?.active) continue;
     const result = await telegram(env, 'sendMessage', {
-      chat_id: row.chat_id, text: messages[messageIndex(slot, messages.length)],
+      chat_id: row.chat_id, text,
     });
     if (result.ok) {
       await env.DB.prepare("UPDATE deliveries SET status='sent',lease_until=0 WHERE chat_id=? AND slot=?")

@@ -16,7 +16,7 @@ function database() {
     }; } };
   } };
 }
-const now = Date.parse('2026-09-07T14:30:00Z');
+const now = Date.parse('2026-09-15T14:30:00Z');
 test('delivery reaches every active subscriber, repeated cron does not duplicate', async () => {
   const DB = database();
   DB.raw.exec("INSERT INTO subscribers VALUES('1',1,0,-1),('2',1,0,-1),('3',0,0,-1)");
