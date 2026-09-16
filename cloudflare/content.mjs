@@ -1,6 +1,6 @@
 import catalog from './slot-messages.json' with { type: 'json' };
 
-export const AUTO_REPLY = 'черт побери, ты такая крутая!';
+export const AUTO_REPLY = 'я тебя тоже люблю ❤️';
 export const COMPLIMENTS = [
   'яркая', 'лучезарная', 'обаятельная', 'добрая', 'душевная', 'искренняя',
   'внимательная', 'заботливая', 'нежная', 'очаровательная', 'замечательная',
