@@ -34,5 +34,5 @@ function pick(items) {
   return items[Math.floor(value / 4294967296 * items.length)];
 }
 export function hugText() { return `Обнимаю 🤗\n\n${pick(support)}`; }
-export function ballText() { return `🔮 ${pick(BALL_ANSWERS)}\n\nЭто игра, а не предсказание 💛`; }
+export function ballText() { return `🔮 ${pick(BALL_ANSWERS)}`; }
 export const ASK_PROMPT = '🔮 Просто задай следующим сообщением вопрос, на который можно ответить «да» или «нет».   Отменить: /cancel.';

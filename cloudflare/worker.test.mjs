@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import worker, { deliver, handleUpdate } from './worker.mjs';
+import { BALL_ANSWERS } from './interactive.mjs';
 
 function database() {
   const db = new DatabaseSync(':memory:');
@@ -75,13 +76,13 @@ test('hug, inline ball, follow-up question, media and cancel preserve subscripti
     assert.ok(sent.at(-1).text.startsWith('Обнимаю'));
     assert.equal(sent.at(-1).reply_markup.keyboard[0].length,2);
     await send('/ask@AnnaZima_bot Получится?');
-    assert.ok(sent.at(-1).text.includes('Это игра'));
+    assert.ok(BALL_ANSWERS.some(answer => sent.at(-1).text === `🔮 ${answer}`));
     await send('🔮 Волшебный шар');
     assert.ok(sent.at(-1).text.includes('следующим сообщением'));
     await send(undefined);
     assert.ok(sent.at(-1).text.includes('текстом'));
     await send('Получится?');
-    assert.ok(sent.at(-1).text.includes('Это игра'));
+    assert.ok(BALL_ANSWERS.some(answer => sent.at(-1).text === `🔮 ${answer}`));
     await send('Привет');
     assert.equal(sent.at(-1).text,'черт побери, ты такая крутая!');
     await send('/ask'); await send('/cancel'); await send('Привет');
