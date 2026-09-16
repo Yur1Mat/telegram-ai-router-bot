@@ -23,7 +23,7 @@ const START_DATE = '2026-09-15';
 const opening = [
   word => `Этим утром ты такая ${word}!`,
   word => `Ты сегодня такая ${word}!`,
-  word => `Доброе утро! Ты такая ${word}!`,
+  word => `Ты такая ${word} — хочется напомнить об этом с утра!`,
   word => `Хочу напомнить с утра: ты такая ${word}!`,
   word => `Как же здорово, что ты такая ${word}!`,
   word => `Утренний комплимент для тебя: ты такая ${word}!`,
@@ -40,7 +40,7 @@ export function scheduledText(slot) {
   // No modulo: an exhausted catalog must not silently repeat old wishes.
   if (day < 0 || day >= list.length) throw new Error('Wish catalog outside configured date range');
   const wish = list[day].text;
-  if (part === '1') return wish;
+  if (part === '1') return `Добрый вечер!\n\n${wish}`;
   const compliment = opening[Math.floor(day / COMPLIMENTS.length)](COMPLIMENTS[day % COMPLIMENTS.length]);
-  return `${compliment}\n\n${wish}`;
+  return `Доброе утро! ${compliment}\n\n${wish}`;
 }

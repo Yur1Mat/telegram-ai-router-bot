@@ -7,7 +7,8 @@ test('750 mornings and evenings are disjoint and do not repeat', () => {
   for(let i=0;i<750;i++) {
     const date=new Date(Date.parse('2026-09-15T00:00:00Z')+i*86400000).toISOString().slice(0,10);
     const am=scheduledText({key:date+':0'}), pm=scheduledText({key:date+':1'});
-    assert.ok(am.includes('\n\n')); assert.ok(!pm.includes('\n\n'));
+    assert.ok(am.startsWith('Доброе утро!')); assert.ok(pm.startsWith('Добрый вечер!'));
+    assert.equal(am.match(/Доброе утро!/g).length, 1);
     compliments.add(am.split('\n\n')[0]); all.add(am); all.add(pm);
   }
   assert.equal(all.size,1500); assert.equal(compliments.size,750);
@@ -19,7 +20,8 @@ test('ordinary text and media receive the exact reply without subscribing',async
   globalThis.fetch=async(_,opts)=>{sent.push(JSON.parse(opts.body));return Response.json({ok:true});};
   try {
     for(const body of [{text:'Привет'},{photo:[{file_id:'test'}]},{sticker:{}},{voice:{}},{text:'/unknown'}]) {
-      await handleUpdate({update_id:123,message:{chat:{id:123,type:'private'},...body}},{});
+      const DB={prepare(){return {bind(){return {async first(){return null;},async run(){}};}};}};
+      await handleUpdate({update_id:123,message:{chat:{id:123,type:'private'},...body}},{DB});
     }
     assert.equal(sent.length,5);
     assert.ok(sent.every(x=>x.text===AUTO_REPLY));

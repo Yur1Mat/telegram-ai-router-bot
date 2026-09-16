@@ -17,3 +17,8 @@ CREATE TABLE IF NOT EXISTS runtime (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS conversations (
+  chat_id TEXT PRIMARY KEY,
+  awaiting_until INTEGER NOT NULL DEFAULT 0,
+  update_id INTEGER NOT NULL
+);

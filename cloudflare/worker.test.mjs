@@ -63,3 +63,40 @@ test('unauthenticated webhook is rejected without database access', async () => 
   const response=await worker.fetch(new Request('https://example.org/telegram',{method:'POST',body:'{}'}),{WEBHOOK_SECRET:'secret'});
   assert.equal(response.status,403);
 });
+test('hug, inline ball, follow-up question, media and cancel preserve subscriptions', async () => {
+  const DB=database(), original=globalThis.fetch, sent=[];
+  globalThis.fetch=async(_,opts)=>{sent.push(JSON.parse(opts.body));return Response.json({ok:true});};
+  let id=100;
+  const send=async(text)=>handleUpdate({update_id:id++,message:{chat:{id:1,type:'private'},text}},{DB});
+  try {
+    await send('🤗 Обними меня');
+    assert.ok(sent.at(-1).text.startsWith('Обнимаю'));
+    assert.equal(sent.at(-1).reply_markup.keyboard[0].length,2);
+    await send('/ask@AnnaZima_bot Получится?');
+    assert.ok(sent.at(-1).text.includes('Это игра'));
+    await send('🔮 Волшебный шар');
+    assert.ok(sent.at(-1).text.includes('следующим сообщением'));
+    await send(undefined);
+    assert.ok(sent.at(-1).text.includes('текстом'));
+    await send('Получится?');
+    assert.ok(sent.at(-1).text.includes('Это игра'));
+    await send('Привет');
+    assert.equal(sent.at(-1).text,'черт побери, ты такая крутая!');
+    await send('/ask'); await send('/cancel'); await send('Привет');
+    assert.equal(sent.at(-1).text,'черт побери, ты такая крутая!');
+    await send('/ask'); await send('/hug'); await send('Привет');
+    assert.equal(sent.at(-1).text,'черт побери, ты такая крутая!');
+    assert.equal(DB.raw.prepare('SELECT count(*) AS n FROM subscribers').get().n,0);
+  } finally {globalThis.fetch=original;DB.raw.close();}
+});
+test('a failed ball response leaves the question pending for retry', async () => {
+  const DB=database(), original=globalThis.fetch;
+  const update=(id,text)=>({update_id:id,message:{chat:{id:1,type:'private'},text}});
+  try {
+    globalThis.fetch=async()=>Response.json({ok:true});
+    await handleUpdate(update(1,'/ask'),{DB});
+    globalThis.fetch=async()=>Response.json({ok:false,error_code:429});
+    await assert.rejects(()=>handleUpdate(update(2,'Получится?'),{DB}));
+    assert.ok(DB.raw.prepare('SELECT awaiting_until FROM conversations').get().awaiting_until>Date.now());
+  } finally {globalThis.fetch=original;DB.raw.close();}
+});

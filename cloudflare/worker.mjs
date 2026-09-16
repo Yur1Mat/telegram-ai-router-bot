@@ -1,5 +1,6 @@
 import { latestSlot } from './schedule.mjs';
 import { scheduledText, AUTO_REPLY } from './content.mjs';
+import { KEYBOARD, hugText, ballText, ASK_PROMPT } from './interactive.mjs';
 
 async function telegram(env, method, body) {
   try {
@@ -21,9 +22,39 @@ export async function handleUpdate(update, env) {
   if (!Number.isSafeInteger(update.update_id) || message?.chat?.type !== 'private'
       || !Number.isSafeInteger(message.chat.id)) return;
   const chat = String(message.chat.id);
-  const command = (message.text || '').trim().split(/\s+/)[0].split('@')[0].toLowerCase();
+  const input = (message.text || '').trim();
+  let command = input.split(/\s+/)[0].split('@')[0].toLowerCase();
+  if (input === '🤗 Обними меня') command = '/hug';
+  if (input === '🔮 Волшебный шар') command = '/ask';
+  const state = await env.DB.prepare('SELECT awaiting_until,update_id FROM conversations WHERE chat_id=?').bind(chat).first();
+  if (state && update.update_id < state.update_id) return;
+  const awaiting = state?.awaiting_until > Date.now();
+  let interactive;
+  let until = 0;
+  if (command === '/hug') interactive = hugText();
+  else if (command === '/ask') {
+    const question = input === '🔮 Волшебный шар' ? '' : input.replace(/^\S+\s*/, '');
+    interactive = question ? ballText() : ASK_PROMPT;
+    if (!question) until = Date.now() + 15 * 60 * 1000;
+  } else if (command === '/cancel') interactive = 'Вопрос шару отменён 💛';
+  else if (awaiting && !input.startsWith('/')) {
+    interactive = input ? ballText() : '🔮 Напиши вопрос текстом. Отменить: /cancel.';
+    if (!input) until = state.awaiting_until;
+  }
+  async function saveConversation() {
+    await env.DB.prepare(`INSERT INTO conversations(chat_id,awaiting_until,update_id) VALUES(?,?,?)
+      ON CONFLICT(chat_id) DO UPDATE SET awaiting_until=excluded.awaiting_until,update_id=excluded.update_id
+      WHERE excluded.update_id>=conversations.update_id`).bind(chat, until, update.update_id).run();
+  }
+  if (interactive) {
+    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: interactive, reply_markup: KEYBOARD });
+    if (!reply.ok && reply.code !== 403 && reply.code !== 400) throw new Error('Reply temporarily unavailable');
+    await saveConversation();
+    return;
+  }
+  if (input.startsWith('/')) await saveConversation();
   if (!['/start', '/stop', '/status', '/help'].includes(command)) {
-    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: AUTO_REPLY });
+    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: AUTO_REPLY, reply_markup: KEYBOARD });
     if (!reply.ok && reply.code !== 403 && reply.code !== 400) throw new Error('Reply temporarily unavailable');
     return;
   }
@@ -40,10 +71,10 @@ export async function handleUpdate(update, env) {
   // An old Telegram retry must not override or announce a newer command.
   if (subscriber && update.update_id < subscriber.update_id) return;
   const text = command === '/stop' ? 'Рассылка отключена. Вернуться: /start 💛'
-    : command === '/help' ? 'Два добрых пожелания каждый день: 08:30 и 17:30 по Москве. /start — подписаться, /stop — отключить, /status — проверить.'
+    : command === '/help' ? 'Два добрых пожелания каждый день: 08:30 и 17:30 по Москве. /start — подписаться, /stop — отключить, /status — проверить. /hug — обнять, /ask — волшебный шар, /cancel — отменить вопрос. Можно пользоваться кнопками ниже.'
     : subscriber?.active ? 'Подписка включена 💛 Пожелания приходят в 08:30 и 17:30 по Москве. Остановить: /stop.'
     : 'Подписка отключена. Включить: /start 💛';
-  const result = await telegram(env, 'sendMessage', { chat_id: chat, text });
+  const result = await telegram(env, 'sendMessage', { chat_id: chat, text, reply_markup: KEYBOARD });
   if (!result.ok && result.code !== 403 && result.code !== 400) throw new Error('Reply temporarily unavailable');
 }
 
