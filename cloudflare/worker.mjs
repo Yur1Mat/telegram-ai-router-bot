@@ -1,5 +1,5 @@
 import { latestSlot } from './schedule.mjs';
-import { scheduledText, autoReply } from './content.mjs';
+import { scheduledText, autoReply, voiceReply } from './content.mjs';
 import { KEYBOARD, BALL_KEYBOARD, hugText, ballText, ASK_PROMPT } from './interactive.mjs';
 
 async function telegram(env, method, body) {
@@ -55,7 +55,7 @@ export async function handleUpdate(update, env) {
   }
   if (input.startsWith('/')) await saveConversation();
   if (!['/start', '/stop', '/status', '/help'].includes(command)) {
-    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: autoReply(), reply_markup: KEYBOARD });
+    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: message.voice ? voiceReply() : autoReply(), reply_markup: KEYBOARD });
     if (!reply.ok && reply.code !== 403 && reply.code !== 400) throw new Error('Reply temporarily unavailable');
     return;
   }

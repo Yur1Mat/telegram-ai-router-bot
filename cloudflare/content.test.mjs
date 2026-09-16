@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scheduledText, AUTO_REPLIES, autoReply } from './content.mjs';
+import { scheduledText, AUTO_REPLIES, autoReply, VOICE_REPLIES, voiceReply } from './content.mjs';
 import { handleUpdate } from './worker.mjs';
 test('750 mornings and evenings are disjoint and do not repeat', () => {
   const all = new Set(), compliments = new Set();
@@ -19,7 +19,7 @@ test('ordinary text and media receive one pool reply without subscribing',async(
   const original=globalThis.fetch; const sent=[];
   globalThis.fetch=async(_,opts)=>{sent.push(JSON.parse(opts.body));return Response.json({ok:true});};
   try {
-    for(const body of [{text:'Привет'},{photo:[{file_id:'test'}]},{sticker:{}},{voice:{}},{text:'/unknown'}]) {
+    for(const body of [{text:'Привет'},{photo:[{file_id:'test'}]},{sticker:{}},{audio:{}},{text:'/unknown'}]) {
       const DB={prepare(){return {bind(){return {async first(){return null;},async run(){}};}};}};
       await handleUpdate({update_id:123,message:{chat:{id:123,type:'private'},...body}},{DB});
     }
@@ -28,6 +28,33 @@ test('ordinary text and media receive one pool reply without subscribing',async(
     await handleUpdate({update_id:124,message:{chat:{id:-1,type:'group'},text:'Привет'}},{});
     assert.equal(sent.length,5);
   } finally { globalThis.fetch=original; }
+});
+test('voice replies are exact, reachable and used only for voice outside ball mode', async () => {
+  assert.deepEqual(VOICE_REPLIES,[
+    'Анечка, голосовое принято! Жужа довольно жужужжит 🎧',
+    'Ого, сегодня у нас голосовая почта! 💛',
+    'Жужа получил голосовое 🤗',
+    'Жужа всё слышит, тебе тоже "га-га-га"',
+    'Опять переслушивать на репите?',
+  ]);
+  assert.deepEqual(VOICE_REPLIES.map((_,i)=>voiceReply(()=>(i+0.5)/5)),VOICE_REPLIES);
+  assert.equal(voiceReply(()=>0),VOICE_REPLIES[0]);
+  assert.equal(voiceReply(()=>1-Number.EPSILON),VOICE_REPLIES.at(-1));
+  const original=globalThis.fetch, sent=[];
+  let state=null;
+  const DB={prepare(){return {bind(){return {async first(){return state;},async run(){}};}};}};
+  globalThis.fetch=async(_,opts)=>{sent.push(JSON.parse(opts.body));return Response.json({ok:true});};
+  const update={update_id:200,message:{chat:{id:123,type:'private'},voice:{file_id:'test'}}};
+  try {
+    for(let i=0;i<20;i++) await handleUpdate(update,{DB});
+    assert.equal(sent.length,20);
+    assert.ok(sent.every(x=>VOICE_REPLIES.includes(x.text)));
+    state={awaiting_until:Date.now()+60000,update_id:199};
+    await handleUpdate(update,{DB});
+    assert.equal(sent.at(-1).text,'🔮 Напиши вопрос текстом. Отменить: /cancel.');
+    await handleUpdate({...update,message:{...update.message,chat:{id:-1,type:'group'}}},{});
+    assert.equal(sent.length,21);
+  } finally {globalThis.fetch=original;}
 });
 test('random selection can reach all 17 distinct replies including both endpoints', () => {
   assert.equal(AUTO_REPLIES.length,17);

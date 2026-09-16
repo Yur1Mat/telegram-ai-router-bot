@@ -23,6 +23,16 @@ export const AUTO_REPLIES = Object.freeze([
 export function autoReply(random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) {
   return AUTO_REPLIES[Math.floor(random() * AUTO_REPLIES.length)];
 }
+export const VOICE_REPLIES = Object.freeze([
+  'Анечка, голосовое принято! Жужа довольно жужужжит 🎧',
+  'Ого, сегодня у нас голосовая почта! 💛',
+  'Жужа получил голосовое 🤗',
+  'Жужа всё слышит, тебе тоже "га-га-га"',
+  'Опять переслушивать на репите?',
+]);
+export function voiceReply(random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) {
+  return VOICE_REPLIES[Math.floor(random() * VOICE_REPLIES.length)];
+}
 export const COMPLIMENTS = [
   'яркая', 'лучезарная', 'обаятельная', 'добрая', 'душевная', 'искренняя',
   'внимательная', 'заботливая', 'нежная', 'очаровательная', 'замечательная',
