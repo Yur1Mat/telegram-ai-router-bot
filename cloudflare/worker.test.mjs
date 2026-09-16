@@ -71,7 +71,7 @@ test('hug, inline ball, follow-up question, media and cancel preserve subscripti
   try {
     await send('🤗 Обними меня');
     assert.ok(sent.at(-1).text.startsWith('Обнимаю'));
-    assert.equal(sent.at(-1).reply_markup.keyboard[0].length,2);
+    assert.equal(sent.at(-1).reply_markup.keyboard[0].length,1);
     await send('/ask@AnnaZima_bot Получится?');
     assert.ok(sent.at(-1).text.includes('Это игра'));
     await send('🔮 Волшебный шар');
@@ -87,6 +87,22 @@ test('hug, inline ball, follow-up question, media and cancel preserve subscripti
     await send('/ask'); await send('/hug'); await send('Привет');
     assert.equal(sent.at(-1).text,'черт побери, ты такая крутая!');
     assert.equal(DB.raw.prepare('SELECT count(*) AS n FROM subscribers').get().n,0);
+  } finally {globalThis.fetch=original;DB.raw.close();}
+});
+test('help exposes a ball link that prefills /ask without sending a question', async () => {
+  const DB=database(), original=globalThis.fetch, sent=[];
+  globalThis.fetch=async(_,opts)=>{sent.push(JSON.parse(opts.body));return Response.json({ok:true});};
+  try {
+    await handleUpdate({update_id:1,message:{chat:{id:1,type:'private'},text:'/help'}},{DB});
+    assert.equal(sent.length,2);
+    assert.deepEqual(sent[0].reply_markup.keyboard,[[{text:'🤗 Обними меня'}]]);
+    const button=sent[1].reply_markup.inline_keyboard[0][0];
+    const url=new URL(button.url);
+    assert.equal(button.text,'🔮 Волшебный шар');
+    assert.equal(url.origin,'https://t.me');
+    assert.equal(url.pathname,'/AnnaZima_bot');
+    assert.equal(url.searchParams.get('text'),'/ask ');
+    assert.equal(DB.raw.prepare('SELECT awaiting_until FROM conversations').get().awaiting_until,0);
   } finally {globalThis.fetch=original;DB.raw.close();}
 });
 test('a failed ball response leaves the question pending for retry', async () => {

@@ -1,6 +1,6 @@
 import { latestSlot } from './schedule.mjs';
 import { scheduledText, AUTO_REPLY } from './content.mjs';
-import { KEYBOARD, hugText, ballText, ASK_PROMPT } from './interactive.mjs';
+import { KEYBOARD, BALL_KEYBOARD, hugText, ballText, ASK_PROMPT } from './interactive.mjs';
 
 async function telegram(env, method, body) {
   try {
@@ -47,7 +47,8 @@ export async function handleUpdate(update, env) {
       WHERE excluded.update_id>=conversations.update_id`).bind(chat, until, update.update_id).run();
   }
   if (interactive) {
-    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: interactive, reply_markup: KEYBOARD });
+    const isBall = command === '/ask' || (awaiting && !input.startsWith('/') && command !== '/hug');
+    const reply = await telegram(env, 'sendMessage', { chat_id: chat, text: interactive, reply_markup: isBall ? BALL_KEYBOARD : KEYBOARD });
     if (!reply.ok && reply.code !== 403 && reply.code !== 400) throw new Error('Reply temporarily unavailable');
     await saveConversation();
     return;
@@ -76,6 +77,14 @@ export async function handleUpdate(update, env) {
     : 'Подписка отключена. Включить: /start 💛';
   const result = await telegram(env, 'sendMessage', { chat_id: chat, text, reply_markup: KEYBOARD });
   if (!result.ok && result.code !== 403 && result.code !== 400) throw new Error('Reply temporarily unavailable');
+  if (result.ok && (command === '/start' || command === '/help')) {
+    const menu = await telegram(env, 'sendMessage', {
+      chat_id: chat,
+      text: '🔮 Нажми кнопку: в поле ввода появится /ask. Допиши свой вопрос и отправь сообщение. Шар — игра, а не предсказание.',
+      reply_markup: BALL_KEYBOARD,
+    });
+    if (!menu.ok && menu.code !== 403 && menu.code !== 400) throw new Error('Reply temporarily unavailable');
+  }
 }
 
 export async function deliver(env, now = Date.now()) {

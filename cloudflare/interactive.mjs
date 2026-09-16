@@ -1,6 +1,10 @@
 export const KEYBOARD = {
-  keyboard: [[{ text: '🤗 Обними меня' }, { text: '🔮 Волшебный шар' }]],
+  keyboard: [[{ text: '🤗 Обними меня' }]],
   resize_keyboard: true,
+};
+// Public username links prefill a draft; unlike reply buttons they do not send it.
+export const BALL_KEYBOARD = {
+  inline_keyboard: [[{ text: '🔮 Волшебный шар', url: 'https://t.me/AnnaZima_bot?text=%2Fask%20' }]],
 };
 
 const support = [
