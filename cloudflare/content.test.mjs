@@ -56,12 +56,13 @@ test('voice replies are exact, reachable and used only for voice outside ball mo
     assert.equal(sent.length,21);
   } finally {globalThis.fetch=original;}
 });
-test('random selection can reach all 17 distinct replies including both endpoints', () => {
-  assert.equal(AUTO_REPLIES.length,17);
-  assert.equal(new Set(AUTO_REPLIES).size,17);
+test('random selection can reach all 35 distinct emoji replies including both endpoints', () => {
+  assert.equal(AUTO_REPLIES.length,35);
+  assert.equal(new Set(AUTO_REPLIES).size,35);
+  assert.ok(AUTO_REPLIES.every(reply=>/\p{Extended_Pictographic}/u.test(reply)));
   assert.equal(autoReply(()=>0),AUTO_REPLIES[0]);
   assert.equal(autoReply(()=>1-Number.EPSILON),AUTO_REPLIES.at(-1));
-  const selected=AUTO_REPLIES.map((_,i)=>autoReply(()=>(i+0.5)/17));
+  const selected=AUTO_REPLIES.map((_,i)=>autoReply(()=>(i+0.5)/AUTO_REPLIES.length));
   assert.deepEqual(selected,AUTO_REPLIES);
   for(let i=0;i<100;i++) assert.ok(AUTO_REPLIES.includes(autoReply()));
 });
