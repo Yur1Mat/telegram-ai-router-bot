@@ -35,4 +35,4 @@ function pick(items) {
 }
 export function hugText() { return `Обнимаю 🤗\n\n${pick(support)}`; }
 export function ballText() { return `🔮 ${pick(BALL_ANSWERS)}\n\nЭто игра, а не предсказание 💛`; }
-export const ASK_PROMPT = '🔮 Задай следующим сообщением вопрос, на который можно ответить «да» или «нет». Команду писать не нужно — просто отправь вопрос. Это игра, а не предсказание. Отменить: /cancel.';
+export const ASK_PROMPT = '🔮 Просто задай следующим сообщением вопрос, на который можно ответить «да» или «нет».   Отменить: /cancel.';
