@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import worker, { deliver, handleUpdate } from './worker.mjs';
 import { BALL_ANSWERS } from './interactive.mjs';
+import { AUTO_REPLIES } from './content.mjs';
 
 function database() {
   const db = new DatabaseSync(':memory:');
@@ -84,11 +85,11 @@ test('hug, inline ball, follow-up question, media and cancel preserve subscripti
     await send('Получится?');
     assert.ok(BALL_ANSWERS.some(answer => sent.at(-1).text === `🔮 ${answer}`));
     await send('Привет');
-    assert.equal(sent.at(-1).text,'я тебя тоже люблю ❤️');
+    assert.ok(AUTO_REPLIES.includes(sent.at(-1).text));
     await send('/ask'); await send('/cancel'); await send('Привет');
-    assert.equal(sent.at(-1).text,'я тебя тоже люблю ❤️');
+    assert.ok(AUTO_REPLIES.includes(sent.at(-1).text));
     await send('/ask'); await send('/hug'); await send('Привет');
-    assert.equal(sent.at(-1).text,'я тебя тоже люблю ❤️');
+    assert.ok(AUTO_REPLIES.includes(sent.at(-1).text));
     assert.equal(DB.raw.prepare('SELECT count(*) AS n FROM subscribers').get().n,0);
   } finally {globalThis.fetch=original;DB.raw.close();}
 });

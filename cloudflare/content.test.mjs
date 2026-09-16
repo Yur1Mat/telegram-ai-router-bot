@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scheduledText, AUTO_REPLY } from './content.mjs';
+import { scheduledText, AUTO_REPLIES, autoReply } from './content.mjs';
 import { handleUpdate } from './worker.mjs';
 test('750 mornings and evenings are disjoint and do not repeat', () => {
   const all = new Set(), compliments = new Set();
@@ -15,7 +15,7 @@ test('750 mornings and evenings are disjoint and do not repeat', () => {
   assert.throws(()=>scheduledText({key:'2026-09-14:0'}));
   assert.throws(()=>scheduledText({key:'2028-10-04:0'}));
 });
-test('ordinary text and media receive the exact reply without subscribing',async()=>{
+test('ordinary text and media receive one pool reply without subscribing',async()=>{
   const original=globalThis.fetch; const sent=[];
   globalThis.fetch=async(_,opts)=>{sent.push(JSON.parse(opts.body));return Response.json({ok:true});};
   try {
@@ -24,9 +24,17 @@ test('ordinary text and media receive the exact reply without subscribing',async
       await handleUpdate({update_id:123,message:{chat:{id:123,type:'private'},...body}},{DB});
     }
     assert.equal(sent.length,5);
-    assert.ok(sent.every(x=>x.text===AUTO_REPLY));
-    assert.equal(AUTO_REPLY,'я тебя тоже люблю ❤️');
+    assert.ok(sent.every(x=>AUTO_REPLIES.includes(x.text)));
     await handleUpdate({update_id:124,message:{chat:{id:-1,type:'group'},text:'Привет'}},{});
     assert.equal(sent.length,5);
   } finally { globalThis.fetch=original; }
+});
+test('random selection can reach all 17 distinct replies including both endpoints', () => {
+  assert.equal(AUTO_REPLIES.length,17);
+  assert.equal(new Set(AUTO_REPLIES).size,17);
+  assert.equal(autoReply(()=>0),AUTO_REPLIES[0]);
+  assert.equal(autoReply(()=>1-Number.EPSILON),AUTO_REPLIES.at(-1));
+  const selected=AUTO_REPLIES.map((_,i)=>autoReply(()=>(i+0.5)/17));
+  assert.deepEqual(selected,AUTO_REPLIES);
+  for(let i=0;i<100;i++) assert.ok(AUTO_REPLIES.includes(autoReply()));
 });
