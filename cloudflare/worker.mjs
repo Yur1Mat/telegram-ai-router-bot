@@ -80,7 +80,7 @@ export async function handleUpdate(update, env) {
   if (result.ok && (command === '/start' || command === '/help')) {
     const menu = await telegram(env, 'sendMessage', {
       chat_id: chat,
-      text: '🔮 Нажми кнопку: в поле ввода появится /ask. Допиши свой вопрос и отправь сообщение. Шар — игра, а не предсказание.',
+      text: '🔮 Нажми «Волшебный шар» под полем ввода и отправь вопрос следующим сообщением — без команд. Если удобнее подставить /ask в строку ввода, воспользуйся кнопкой под этим сообщением. Шар — игра, а не предсказание.',
       reply_markup: BALL_KEYBOARD,
     });
     if (!menu.ok && menu.code !== 403 && menu.code !== 400) throw new Error('Reply temporarily unavailable');
@@ -111,7 +111,7 @@ export async function deliver(env, now = Date.now()) {
     const active = await env.DB.prepare('SELECT active FROM subscribers WHERE chat_id=?').bind(row.chat_id).first();
     if (!active?.active) continue;
     const result = await telegram(env, 'sendMessage', {
-      chat_id: row.chat_id, text,
+      chat_id: row.chat_id, text, reply_markup: KEYBOARD,
     });
     if (result.ok) {
       await env.DB.prepare("UPDATE deliveries SET status='sent',lease_until=0 WHERE chat_id=? AND slot=?")

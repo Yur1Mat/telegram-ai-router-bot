@@ -1,6 +1,7 @@
 export const KEYBOARD = {
-  keyboard: [[{ text: '🤗 Обними меня' }]],
+  keyboard: [[{ text: '🤗 Обними меня' }, { text: '🔮 Волшебный шар' }]],
   resize_keyboard: true,
+  is_persistent: true,
 };
 // Public username links prefill a draft; unlike reply buttons they do not send it.
 export const BALL_KEYBOARD = {
@@ -34,4 +35,4 @@ function pick(items) {
 }
 export function hugText() { return `Обнимаю 🤗\n\n${pick(support)}`; }
 export function ballText() { return `🔮 ${pick(BALL_ANSWERS)}\n\nЭто игра, а не предсказание 💛`; }
-export const ASK_PROMPT = '🔮 Задай следующим сообщением вопрос, на который можно ответить «да» или «нет». Или напиши /ask и вопрос в одном сообщении. Это игра, а не предсказание. Отменить: /cancel.';
+export const ASK_PROMPT = '🔮 Задай следующим сообщением вопрос, на который можно ответить «да» или «нет». Команду писать не нужно — просто отправь вопрос. Это игра, а не предсказание. Отменить: /cancel.';

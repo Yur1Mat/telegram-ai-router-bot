@@ -28,6 +28,8 @@ test('delivery reaches every active subscriber, repeated cron does not duplicate
     await deliver(env, now); await deliver(env, now + 60000);
     assert.deepEqual(sent.map(s=>s.chat_id), ['1','2']);
     assert.equal(sent[0].text, sent[1].text);
+    assert.ok(sent.every(s=>s.reply_markup.is_persistent === true));
+    assert.equal(sent[0].reply_markup.keyboard[0][1].text,'🔮 Волшебный шар');
   } finally { globalThis.fetch = original; DB.raw.close(); }
 });
 test('403 disables subscriber, transient errors are retried', async () => {
@@ -71,7 +73,7 @@ test('hug, inline ball, follow-up question, media and cancel preserve subscripti
   try {
     await send('🤗 Обними меня');
     assert.ok(sent.at(-1).text.startsWith('Обнимаю'));
-    assert.equal(sent.at(-1).reply_markup.keyboard[0].length,1);
+    assert.equal(sent.at(-1).reply_markup.keyboard[0].length,2);
     await send('/ask@AnnaZima_bot Получится?');
     assert.ok(sent.at(-1).text.includes('Это игра'));
     await send('🔮 Волшебный шар');
@@ -95,7 +97,7 @@ test('help exposes a ball link that prefills /ask without sending a question', a
   try {
     await handleUpdate({update_id:1,message:{chat:{id:1,type:'private'},text:'/help'}},{DB});
     assert.equal(sent.length,2);
-    assert.deepEqual(sent[0].reply_markup.keyboard,[[{text:'🤗 Обними меня'}]]);
+    assert.deepEqual(sent[0].reply_markup.keyboard,[[{text:'🤗 Обними меня'},{text:'🔮 Волшебный шар'}]]);
     const button=sent[1].reply_markup.inline_keyboard[0][0];
     const url=new URL(button.url);
     assert.equal(button.text,'🔮 Волшебный шар');
