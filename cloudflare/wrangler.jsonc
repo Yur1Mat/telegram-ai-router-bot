@@ -4,7 +4,7 @@
   "compatibility_date": "2026-09-07",
   "account_id": "6f0ae2e2d419ddd1d15b57911f0f82be",
   "workers_dev": true,
-  "vars": { "DELIVERY_ENABLED": "true" },
+  "vars": { "DELIVERY_ENABLED": "true", "NIGHT_MESSAGE_CHANCE_PERCENT": "15" },
   "triggers": { "crons": ["* * * * *"] },
   "d1_databases": [{
     "binding": "DB",

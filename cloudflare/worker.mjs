@@ -1,6 +1,7 @@
 import { latestSlot } from './schedule.mjs';
 import { scheduledText, autoReply, voiceReply } from './content.mjs';
 import { KEYBOARD, BALL_KEYBOARD, hugText, ballText, ASK_PROMPT } from './interactive.mjs';
+import { NIGHT_MESSAGES, nightSlot, nightChance, nightDecision } from './night.mjs';
 
 async function telegram(env, method, body) {
   try {
@@ -92,9 +93,22 @@ export async function deliver(env, now = Date.now()) {
     .bind(new Date(now).toISOString()).run();
   // A disabled deployment can be verified safely before secrets/subscribers are imported.
   if (env.DELIVERY_ENABLED !== 'true') return;
+  const night = nightSlot(now);
+  if (night) {
+    const eligible = await env.DB.prepare('SELECT chat_id FROM subscribers WHERE active=1 AND since<=? LIMIT 1')
+      .bind(night.scheduledAt).first();
+    if (!eligible) return;
+    const index = await nightDecision(env.DB, night.day, nightChance(env));
+    if (index !== null) await deliverText(env, night, NIGHT_MESSAGES[index], now);
+    return;
+  }
   const slot = latestSlot(now);
   if (!slot) return;
   const text = scheduledText(slot);
+  await deliverText(env, slot, text, now);
+}
+
+async function deliverText(env, slot, text, now) {
   const { results } = await env.DB.prepare(`SELECT s.chat_id FROM subscribers s
     LEFT JOIN deliveries d ON d.chat_id=s.chat_id AND d.slot=?
     WHERE s.active=1 AND s.since<=? AND (d.status IS NULL OR (d.status='pending' AND d.lease_until<=?))
@@ -124,7 +138,7 @@ export async function deliver(env, now = Date.now()) {
         .bind(now + Math.max(60, result.retry) * 1000, row.chat_id, slot.key).run();
     }
   }
-  console.log(JSON.stringify({ event: 'delivery', candidates: results.length, sent }));
+  console.log(JSON.stringify({ event: 'delivery', slot: slot.key, candidates: results.length, sent }));
 }
 
 export default {
