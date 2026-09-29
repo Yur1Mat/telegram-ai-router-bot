@@ -17,7 +17,7 @@ export function nightSlot(now = Date.now()) {
 }
 
 export function nightChance(env) {
-  const value = Number(env.NIGHT_MESSAGE_CHANCE_PERCENT ?? 15);
+  const value = Number(env.NIGHT_MESSAGE_CHANCE_PERCENT ?? 10);
   if (!Number.isFinite(value) || value < 0 || value > 100) {
     throw new Error('NIGHT_MESSAGE_CHANCE_PERCENT must be between 0 and 100');
   }

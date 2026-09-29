@@ -23,7 +23,7 @@ test('night window uses 04:00 Moscow and ends at the morning slot', () => {
   assert.equal(nightSlot(Date.parse('2026-09-26T01:00:00Z')).key, 'night:2026-09-26');
   assert.equal(nightSlot(Date.parse('2026-09-26T05:29:59Z')).key, 'night:2026-09-26');
   assert.equal(nightSlot(Date.parse('2026-09-26T05:30:00Z')), null);
-  assert.equal(nightChance({}), 15);
+  assert.equal(nightChance({}), 10);
   assert.equal(nightChance({ NIGHT_MESSAGE_CHANCE_PERCENT: '0' }), 0);
 });
 
