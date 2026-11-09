@@ -64,7 +64,6 @@ export async function handleUpdate(update, env) {
       chat_id: chat,
       html: PET_WIDGET_HTML,
       width: 360,
-      height: 150,
       caption: '🧪 Пробный виджет: погладь Жужу за ушком 🤗',
       allow_queries: true,
     });

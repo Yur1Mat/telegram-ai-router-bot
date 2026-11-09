@@ -119,6 +119,7 @@ test('the trial widget is sent on demand and answers its button request in place
     assert.equal(sent.method,'sendWidget');
     assert.equal(sent.body.chat_id,'1');
     assert.equal(sent.body.allow_queries,true);
+    assert.equal(sent.body.height,undefined);
     assert.match(sent.body.html,/TelegramWidget\.request\('pet'\)/);
     assert.equal(sent.body.caption,'🧪 Пробный виджет: погладь Жужу за ушком 🤗');
     await handleUpdate({update_id:2,widget_query:{id:'widget-query-1',chat:{id:1,type:'private'},data:'pet'}},{});
