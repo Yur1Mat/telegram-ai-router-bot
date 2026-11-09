@@ -99,7 +99,7 @@ test('help exposes a ball link that prefills /ask without sending a question', a
   try {
     await handleUpdate({update_id:1,message:{chat:{id:1,type:'private'},text:'/help'}},{DB});
     assert.equal(sent.length,2);
-    assert.deepEqual(sent[0].reply_markup.keyboard,[[{text:'🤗 Обними меня'},{text:'🔮 Волшебный шар'}]]);
+    assert.deepEqual(sent[0].reply_markup.keyboard,[[{text:'🤗 Обними меня'},{text:'🔮 Волшебный шар'}],[{text:'🧪 Погладить Жужу'}]]);
     const button=sent[1].reply_markup.inline_keyboard[0][0];
     const url=new URL(button.url);
     assert.equal(button.text,'🔮 Волшебный шар');
@@ -107,6 +107,24 @@ test('help exposes a ball link that prefills /ask without sending a question', a
     assert.equal(url.pathname,'/AnnaZima_bot');
     assert.equal(url.searchParams.get('text'),'/ask ');
     assert.equal(DB.raw.prepare('SELECT awaiting_until FROM conversations').get().awaiting_until,0);
+  } finally {globalThis.fetch=original;DB.raw.close();}
+});
+test('the trial widget is sent on demand and answers its button request in place', async () => {
+  const DB=database(), original=globalThis.fetch, calls=[];
+  globalThis.fetch=async(url,opts)=>{calls.push({method:String(url).split('/').at(-1),body:JSON.parse(opts.body)});return Response.json({ok:true});};
+  const update=(id,message)=>({update_id:id,message:{chat:{id:1,type:'private'},text:message}});
+  try {
+    await handleUpdate(update(1,'🧪 Погладить Жужу'),{DB});
+    const sent=calls[0];
+    assert.equal(sent.method,'sendWidget');
+    assert.equal(sent.body.chat_id,'1');
+    assert.equal(sent.body.allow_queries,true);
+    assert.match(sent.body.html,/TelegramWidget\.request\('pet'\)/);
+    assert.equal(sent.body.caption,'🧪 Пробный виджет: погладь Жужу за ушком 🤗');
+    await handleUpdate({update_id:2,widget_query:{id:'widget-query-1',chat:{id:1,type:'private'},data:'pet'}},{});
+    assert.equal(calls[1].method,'answerWidgetQuery');
+    assert.equal(calls[1].body.widget_query_id,'widget-query-1');
+    assert.match(calls[1].body.data,/Жужа|Моторчик|Объявляю/);
   } finally {globalThis.fetch=original;DB.raw.close();}
 });
 test('a failed ball response leaves the question pending for retry', async () => {
