@@ -137,6 +137,7 @@ test('widget has 50 unique replies for each interaction', () => {
   for (const action of ['hug','pet','wink']) {
     assert.equal(WIDGET_REPLIES[action].length,50);
     assert.equal(new Set(WIDGET_REPLIES[action]).size,50);
+    assert.ok(WIDGET_REPLIES[action].every(phrase => !phrase.includes('🤖')));
   }
 });
 test('a failed ball response leaves the question pending for retry', async () => {
