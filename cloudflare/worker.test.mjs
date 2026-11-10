@@ -122,6 +122,10 @@ test('the widget is sent on demand and answers its button request in place', asy
     assert.equal(sent.body.allow_queries,true);
     assert.equal(sent.body.height,undefined);
     assert.match(sent.body.html,/act\(document\.getElementById\('pet'\),'pet'\)/);
+    assert.match(sent.body.html,/zhuzha-avatar\.png/);
+    assert.match(sent.body.html,/id="score-label">30%/);
+    assert.match(sent.body.html,/joy\+3/);
+    assert.match(sent.body.html,/setInterval\(checkHour,10000\)/);
     assert.equal(sent.body.caption,undefined);
     await handleUpdate({update_id:2,widget_query:{id:'widget-query-1',chat:{id:1,type:'private'},data:'pet'}},{});
     assert.equal(calls[1].method,'answerWidgetQuery');
