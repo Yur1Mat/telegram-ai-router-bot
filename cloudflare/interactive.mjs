@@ -1,5 +1,5 @@
 export const KEYBOARD = {
-  keyboard: [[{ text: '🤗 Обними меня' }, { text: '🔮 Волшебный шар' }], [{ text: '🧪 Погладить Жужу' }]],
+  keyboard: [[{ text: '🔮 Волшебный шар' }]],
   resize_keyboard: true,
   is_persistent: true,
 };

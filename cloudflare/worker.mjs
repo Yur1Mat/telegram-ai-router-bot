@@ -36,9 +36,7 @@ export async function handleUpdate(update, env) {
   const chat = String(message.chat.id);
   const input = (message.text || '').trim();
   let command = input.split(/\s+/)[0].split('@')[0].toLowerCase();
-  if (input === '🤗 Обними меня') command = '/hug';
   if (input === '🔮 Волшебный шар') command = '/ask';
-  if (input === '🧪 Погладить Жужу') command = '/widget';
   const state = await env.DB.prepare('SELECT awaiting_until,update_id FROM conversations WHERE chat_id=?').bind(chat).first();
   if (state && update.update_id < state.update_id) return;
   const awaiting = state?.awaiting_until > Date.now();
@@ -64,7 +62,6 @@ export async function handleUpdate(update, env) {
       chat_id: chat,
       html: PET_WIDGET_HTML,
       width: 360,
-      caption: '🧪 Пробный виджет: погладь Жужу за ушком 🤗',
       allow_queries: true,
     });
     if (!result.ok && result.code !== 400 && result.code !== 403) throw new Error('Widget temporarily unavailable');

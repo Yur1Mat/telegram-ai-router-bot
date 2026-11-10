@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import worker, { deliver, handleUpdate } from './worker.mjs';
 import { BALL_ANSWERS } from './interactive.mjs';
 import { AUTO_REPLIES } from './content.mjs';
+import { WIDGET_REPLIES } from './widget.mjs';
 
 function database() {
   const db = new DatabaseSync(':memory:');
@@ -31,7 +32,7 @@ test('delivery reaches every active subscriber, repeated cron does not duplicate
     assert.deepEqual(sent.map(s=>s.chat_id), ['1','2']);
     assert.equal(sent[0].text, sent[1].text);
     assert.ok(sent.every(s=>s.reply_markup.is_persistent === true));
-    assert.equal(sent[0].reply_markup.keyboard[0][1].text,'🔮 Волшебный шар');
+    assert.equal(sent[0].reply_markup.keyboard[0][0].text,'🔮 Волшебный шар');
   } finally { globalThis.fetch = original; DB.raw.close(); }
 });
 test('403 disables subscriber, transient errors are retried', async () => {
@@ -73,9 +74,9 @@ test('hug, inline ball, follow-up question, media and cancel preserve subscripti
   let id=100;
   const send=async(text)=>handleUpdate({update_id:id++,message:{chat:{id:1,type:'private'},text}},{DB});
   try {
-    await send('🤗 Обними меня');
+    await send('/hug');
     assert.ok(sent.at(-1).text.startsWith('Обнимаю'));
-    assert.equal(sent.at(-1).reply_markup.keyboard[0].length,2);
+    assert.deepEqual(sent.at(-1).reply_markup.keyboard,[[{text:'🔮 Волшебный шар'}]]);
     await send('/ask@AnnaZima_bot Получится?');
     assert.ok(BALL_ANSWERS.some(answer => sent.at(-1).text === `🔮 ${answer}`));
     await send('🔮 Волшебный шар');
@@ -99,7 +100,7 @@ test('help exposes a ball link that prefills /ask without sending a question', a
   try {
     await handleUpdate({update_id:1,message:{chat:{id:1,type:'private'},text:'/help'}},{DB});
     assert.equal(sent.length,2);
-    assert.deepEqual(sent[0].reply_markup.keyboard,[[{text:'🤗 Обними меня'},{text:'🔮 Волшебный шар'}],[{text:'🧪 Погладить Жужу'}]]);
+    assert.deepEqual(sent[0].reply_markup.keyboard,[[{text:'🔮 Волшебный шар'}]]);
     const button=sent[1].reply_markup.inline_keyboard[0][0];
     const url=new URL(button.url);
     assert.equal(button.text,'🔮 Волшебный шар');
@@ -109,24 +110,30 @@ test('help exposes a ball link that prefills /ask without sending a question', a
     assert.equal(DB.raw.prepare('SELECT awaiting_until FROM conversations').get().awaiting_until,0);
   } finally {globalThis.fetch=original;DB.raw.close();}
 });
-test('the trial widget is sent on demand and answers its button request in place', async () => {
+test('the widget is sent on demand and answers its button request in place', async () => {
   const DB=database(), original=globalThis.fetch, calls=[];
   globalThis.fetch=async(url,opts)=>{calls.push({method:String(url).split('/').at(-1),body:JSON.parse(opts.body)});return Response.json({ok:true});};
   const update=(id,message)=>({update_id:id,message:{chat:{id:1,type:'private'},text:message}});
   try {
-    await handleUpdate(update(1,'🧪 Погладить Жужу'),{DB});
+    await handleUpdate(update(1,'/widget'),{DB});
     const sent=calls[0];
     assert.equal(sent.method,'sendWidget');
     assert.equal(sent.body.chat_id,'1');
     assert.equal(sent.body.allow_queries,true);
     assert.equal(sent.body.height,undefined);
-    assert.match(sent.body.html,/TelegramWidget\.request\('pet'\)/);
-    assert.equal(sent.body.caption,'🧪 Пробный виджет: погладь Жужу за ушком 🤗');
+    assert.match(sent.body.html,/act\(document\.getElementById\('pet'\),'pet'\)/);
+    assert.equal(sent.body.caption,undefined);
     await handleUpdate({update_id:2,widget_query:{id:'widget-query-1',chat:{id:1,type:'private'},data:'pet'}},{});
     assert.equal(calls[1].method,'answerWidgetQuery');
     assert.equal(calls[1].body.widget_query_id,'widget-query-1');
-    assert.match(calls[1].body.data,/Жужа|Моторчик|Объявляю/);
+    assert.ok(WIDGET_REPLIES.pet.includes(calls[1].body.data));
   } finally {globalThis.fetch=original;DB.raw.close();}
+});
+test('widget has 50 unique replies for each interaction', () => {
+  for (const action of ['hug','pet','wink']) {
+    assert.equal(WIDGET_REPLIES[action].length,50);
+    assert.equal(new Set(WIDGET_REPLIES[action]).size,50);
+  }
 });
 test('a failed ball response leaves the question pending for retry', async () => {
   const DB=database(), original=globalThis.fetch;
