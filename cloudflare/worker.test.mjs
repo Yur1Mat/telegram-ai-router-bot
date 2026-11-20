@@ -5,7 +5,6 @@ import { readFileSync } from 'node:fs';
 import worker, { deliver, handleUpdate } from './worker.mjs';
 import { BALL_ANSWERS } from './interactive.mjs';
 import { AUTO_REPLIES } from './content.mjs';
-import { WIDGET_REPLIES } from './widget.mjs';
 
 function database() {
   const db = new DatabaseSync(':memory:');
@@ -64,6 +63,26 @@ test('start/stop persists; older updates cannot undo stop', async () => {
     assert.equal(DB.raw.prepare('SELECT active FROM subscribers').get().active,0);
   } finally { globalThis.fetch=original; DB.raw.close(); }
 });
+test('every private incoming message gets a heart reaction and reaction errors do not block replies', async () => {
+  const DB=database(), original=globalThis.fetch, calls=[];
+  globalThis.fetch=async(url,opts)=>{
+    const method=String(url).split('/').at(-1), body=JSON.parse(opts.body);
+    calls.push({method,body});
+    return Response.json(method==='setMessageReaction' ? {ok:false,error_code:400} : {ok:true});
+  };
+  try {
+    await handleUpdate({update_id:1,message:{message_id:51,chat:{id:1,type:'private'},text:'/start'}},{DB});
+    await handleUpdate({update_id:2,message:{message_id:52,chat:{id:1,type:'private'},voice:{file_id:'voice'}}},{DB});
+    const reactions=calls.filter(call=>call.method==='setMessageReaction');
+    assert.equal(reactions.length,2);
+    assert.deepEqual(reactions.map(call=>call.body),[
+      {chat_id:'1',message_id:51,reaction:[{type:'emoji',emoji:'❤️'}]},
+      {chat_id:'1',message_id:52,reaction:[{type:'emoji',emoji:'❤️'}]},
+    ]);
+    assert.ok(calls.some(call=>call.method==='sendMessage' && call.body.text.includes('Подписка включена')));
+    assert.ok(calls.some(call=>call.method==='sendMessage' && call.body.text.includes('голосовое')));
+  } finally {globalThis.fetch=original;DB.raw.close();}
+});
 test('unauthenticated webhook is rejected without database access', async () => {
   const response=await worker.fetch(new Request('https://example.org/telegram',{method:'POST',body:'{}'}),{WEBHOOK_SECRET:'secret'});
   assert.equal(response.status,403);
@@ -109,36 +128,6 @@ test('help exposes a ball link that prefills /ask without sending a question', a
     assert.equal(url.searchParams.get('text'),'/ask ');
     assert.equal(DB.raw.prepare('SELECT awaiting_until FROM conversations').get().awaiting_until,0);
   } finally {globalThis.fetch=original;DB.raw.close();}
-});
-test('the widget is sent on demand and answers its button request in place', async () => {
-  const DB=database(), original=globalThis.fetch, calls=[];
-  globalThis.fetch=async(url,opts)=>{calls.push({method:String(url).split('/').at(-1),body:JSON.parse(opts.body)});return Response.json({ok:true});};
-  const update=(id,message)=>({update_id:id,message:{chat:{id:1,type:'private'},text:message}});
-  try {
-    await handleUpdate(update(1,'/widget'),{DB});
-    const sent=calls[0];
-    assert.equal(sent.method,'sendWidget');
-    assert.equal(sent.body.chat_id,'1');
-    assert.equal(sent.body.allow_queries,true);
-    assert.equal(sent.body.height,undefined);
-    assert.match(sent.body.html,/act\(document\.getElementById\('pet'\),'pet'\)/);
-    assert.match(sent.body.html,/zhuzha-avatar\.png/);
-    assert.match(sent.body.html,/id="score-label">30%/);
-    assert.match(sent.body.html,/joy\+3/);
-    assert.match(sent.body.html,/setInterval\(checkHour,10000\)/);
-    assert.equal(sent.body.caption,undefined);
-    await handleUpdate({update_id:2,widget_query:{id:'widget-query-1',chat:{id:1,type:'private'},data:'pet'}},{});
-    assert.equal(calls[1].method,'answerWidgetQuery');
-    assert.equal(calls[1].body.widget_query_id,'widget-query-1');
-    assert.ok(WIDGET_REPLIES.pet.includes(calls[1].body.data));
-  } finally {globalThis.fetch=original;DB.raw.close();}
-});
-test('widget has 50 unique replies for each interaction', () => {
-  for (const action of ['hug','pet','wink']) {
-    assert.equal(WIDGET_REPLIES[action].length,50);
-    assert.equal(new Set(WIDGET_REPLIES[action]).size,50);
-    assert.ok(WIDGET_REPLIES[action].every(phrase => !phrase.includes('🤖')));
-  }
 });
 test('a failed ball response leaves the question pending for retry', async () => {
   const DB=database(), original=globalThis.fetch;
